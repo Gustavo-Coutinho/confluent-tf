@@ -14,14 +14,14 @@ variable "kafka_cluster_name" {
   default     = "kafkacluster001"
 }
 
-variable "producer_user_name" {
-  description = "The name of the producer user"
+variable "service_account_name" {
+  description = "The name of the service account"
   type        = string
-  default     = "producer"
+  default     = "app-service-account"
 }
 
-variable "consumer_user_name" {
-  description = "The name of the consumer user"
+variable "aws_region" {
+  description = "AWS region for Kafka cluster"
   type        = string
-  default     = "consumer"
+  default     = "sa-east-1"
 }
