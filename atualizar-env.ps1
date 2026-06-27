@@ -57,10 +57,58 @@ foreach ($line in $envLines) {
     }
 }
 
-# Escreve o conteúdo atualizado no novo arquivo .env.
+
+# Escreve o conteúdo atualizado no novo arquivo .env local.
 Set-Content -Path $envFile -Value $newEnvLines
 
 Write-Host "Arquivo .env criado com sucesso em '$envFile'"
+
+# --- Copia o .env para os servidores remotos via scp ---
+$sshKey = "$userProfile/.oci/acesso_vm.key"
+
+# Lê os IPs públicos do arquivo oci.json gerado pelo Terraform.
+# Preferimos o arquivo no diretório oci-vm, com fallback para o diretório atual do script.
+$ociJsonCandidates = @(
+    (Join-Path ([Environment]::GetFolderPath("UserProfile")) "Documents\oci-vm\oci.json"),
+    (Join-Path $scriptDir "oci.json")
+)
+$ociJsonFile = $ociJsonCandidates | Where-Object { Test-Path $_ } | Select-Object -First 1
+$remoteIpValues = @()
+if ($ociJsonFile) {
+    try {
+        $ociJson = Get-Content -Path $ociJsonFile -Raw | ConvertFrom-Json
+        if ($null -ne $ociJson.public_ips -and $null -ne $ociJson.public_ips.value) {
+            $remoteIpValues = @($ociJson.public_ips.value | Where-Object { -not [string]::IsNullOrWhiteSpace($_) })
+        }
+    } catch {
+        Write-Warning "Não foi possível ler '$ociJsonFile'. Usando lista vazia de IPs remotos."
+    }
+} else {
+    Write-Warning "Arquivo 'oci.json' não encontrado em '$($ociJsonCandidates -join ', ')'. Nenhum upload remoto será feito."
+}
+
+$remotePaths = @()
+foreach ($ip in $remoteIpValues) {
+    $remotePaths += @{ host = $ip; path = "/home/ubuntu/teste-carga-avro-vs-json/.env" }
+}
+
+if ($remotePaths.Count -eq 0) {
+    Write-Warning "Nenhum IP público encontrado no arquivo oci.json. O arquivo .env foi gerado localmente, mas nenhum scp será executado."
+}
+
+foreach ($remote in $remotePaths) {
+    $remoteHost = $remote.host
+    $path = $remote.path
+    Write-Host ("Copiando .env para ubuntu@{0}:{1} ..." -f $remoteHost, $path)
+    $destino = "ubuntu@${remoteHost}:$path"
+    $scpArgs = @("-i", $sshKey, "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null", $envFile, $destino)
+    $scpResult = & scp @scpArgs 2>&1
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ".env copiado com sucesso para $remoteHost"
+    } else {
+        Write-Error ("Falha ao copiar .env para {0}: {1}" -f $remoteHost, $scpResult)
+    }
+}
 
 # --- Etapa de Validação ---
 Write-Host "Validando o conteúdo do arquivo .env gerado..."
