@@ -8,7 +8,7 @@ output "kafka_cluster_api_key" {
 }
 
 output "kafka_cluster_api_secret" {
-  value = module.kafka_cluster.kafka_cluster_api_secret
+  value     = module.kafka_cluster.kafka_cluster_api_secret
   sensitive = true
 }
 
@@ -17,7 +17,7 @@ output "schema_registry_api_key" {
 }
 
 output "schema_registry_api_secret" {
-  value = module.kafka_cluster.schema_registry_api_secret
+  value     = module.kafka_cluster.schema_registry_api_secret
   sensitive = true
 }
 
