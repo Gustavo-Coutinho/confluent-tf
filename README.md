@@ -1,5 +1,8 @@
 # Projeto Terraform para Confluent Cloud
 
+> [!NOTE]
+> Link da apresentação do TCC: https://youtu.be/HH218oy6rF0?si=cv8i10xucoJtxoPa
+
 Este projeto utiliza o Terraform para provisionar recursos na Confluent Cloud de forma automatizada.
 
 ## Recursos Criados
